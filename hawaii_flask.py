@@ -1,3 +1,4 @@
+###dependencies
 from flask import Flask, jsonify
 
 import datetime as dt
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 
 from flask import Flask, jsonify
+
+from datetime import datetime
 
 # Database Set up
 engine = create_engine("sqlite:///hawaii.sqlite")
@@ -26,6 +29,7 @@ session = Session(engine)
 ##### Set up Flask
 app = Flask(__name__)
 
+#home route
 @app.route("/")
 def home():
     return ("Hawaii Weather Data API<br/>"
@@ -35,7 +39,115 @@ def home():
     "/api/v1.0/startdate/<br/>"
     "/api/v1.0/startdate/enddate/")
 
+####The building of a function I never incorporated.####
+# def prcp_or_temps(choice1):
+#     most_current = session.query(Measurements.date).order_by(Measurements.date.desc()).first()
+#     last_date = most_current[0]
+#     year_before = last_date.replace(year = (last_date.year - 1))
+#     year_before = year_before.strftime("%Y-%m-%d")
+#     twelve_months = session.query(Stations.name, Stations.station, Measurements.date, Measurements.choice1).filter(Stations.station == Measurements.station, Measurements.date > year_before).order_by(Measurements.date.desc()).all()
+#     choice_dict = {}
+#     record_list = []
+#     for x in range(1, len(twelve_months)):
+#         record_dict = {"Station_id": twelve_months[x-1][1], "station name": twelve_months[x-1][0], "station %s measure" % (choice): twelve_months[x-1][3]}
+#         record_list.append(record_dict)
+#         if twelve_months[x-1][2] != twelve_months[x][2]:
+#             date_str =  twelve_months[x-1][2].strftime("%Y-%m-%d")
+#             choice_dict[date_str] = record_list
+#             record_list = []
+#         if x == (len(twelve_months)-1):
+#             record_dict = {"station_id": twelve_months[x][1], "station name": twelve_months[x][0], "station prcp measure": twelve_months[x][3]}
+#             record_list.append(record_dict)
+#             date_str =  twelve_months[x][2].strftime("%Y-%m-%d")
+#             choice_dict[date_str] = record_list
+#         return choice_dict
 
+#precipition route
+@app.route("/api/v1.0/precipitation")
+def precip_json():
+    #dymatic dates for the past year based on database records
+    most_current = session.query(Measurements.date).order_by(Measurements.date.desc()).first()
+    last_date = most_current[0]
+    year_before = last_date.replace(year = (last_date.year - 1))
+    year_before = year_before.strftime("%Y-%m-%d")
+    #query
+    twelve_months = session.query(Stations.name, Stations.station, Measurements.date, Measurements.prcp).filter(Stations.station == Measurements.station, Measurements.date > year_before).order_by(Measurements.date.desc()).all()
+    #dict for json
+    precip_dict = {}
+    #list to hold each stations data to be dumped with change of date
+    record_list = []
+    # loop through all records
+    for x in range(1, len(twelve_months)):
+        #create a dictionary with station level info
+        record_dict = {"Station_id": twelve_months[x-1][1], "station name": twelve_months[x-1][0], "station prcp measure": twelve_months[x-1][3]}
+        # append to list
+        record_list.append(record_dict)
+        # if date changes create a new key and value, then dump record list for next dates info
+        if twelve_months[x-1][2] != twelve_months[x][2]:
+            date_str =  twelve_months[x-1][2].strftime("%Y-%m-%d")
+            precip_dict[date_str] = record_list
+            record_list = []
+        # grab last record since we've been using x-1 for all previous records
+        if x == (len(twelve_months)-1):
+            record_dict = {"station_id": twelve_months[x][1], "station name": twelve_months[x][0], "station prcp measure": twelve_months[x][3]}
+            record_list.append(record_dict)
+            date_str =  twelve_months[x][2].strftime("%Y-%m-%d")
+            precip_dict[date_str] = record_list
+    # return the dictionary
+    return jsonify(precip_dict)
+
+@app.route("/api/v1.0/stations")
+def stations():
+    #list for station data
+    stations_list = []
+    #query
+    stations = session.query(Stations.station, Stations.name, Stations.latitude, Stations.longitude, Stations.elevation).all()
+    #create a dictionary for each station's info and append to list
+    for station in stations:
+        station_dict = {"station_id": station[0], "name": station[1], "latitude": station[2], "longitude": station[3], "elevation": station[4]}
+        stations_list.append(station_dict)
+    # return to user
+    return jsonify(stations_list)
+    
+### see comments from lines 65-97 as it is the same process
+@app.route("/api/v1.0/tobs")
+def temps_json():
+    most_current = session.query(Measurements.date).order_by(Measurements.date.desc()).first()
+    last_date = most_current[0]
+    year_before = last_date.replace(year = (last_date.year - 1))
+    year_before = year_before.strftime("%Y-%m-%d")
+    twelve_months = session.query(Stations.name, Stations.station, Measurements.date, Measurements.tobs).filter(Stations.station == Measurements.station, Measurements.date > year_before).order_by(Measurements.date.desc()).all()
+    temps_dict = {}
+    record_list = []
+    for x in range(1, len(twelve_months)):
+        record_dict = {"Station_id": twelve_months[x-1][1], "station name": twelve_months[x-1][0], "station temp measure": twelve_months[x-1][3]}
+        record_list.append(record_dict)
+        if twelve_months[x-1][2] != twelve_months[x][2]:
+            date_str =  twelve_months[x-1][2].strftime("%Y-%m-%d")
+            temps_dict[date_str] = record_list
+            record_list = []
+        if x == (len(twelve_months)-1):
+            record_dict = {"station_id": twelve_months[x][1], "station name": twelve_months[x][0], "station temp measure": twelve_months[x][3]}
+            record_list.append(record_dict)
+            date_str =  twelve_months[x][2].strftime("%Y-%m-%d")
+            temps_dict[date_str] = record_list
+    return jsonify(temps_dict)
+
+@app.route("/api/v1.0/<start_date>/")
+def temp_stats(start_date):
+    #query using start date
+    temps = session.query(func.min(Measurements.tobs), func.max(Measurements.tobs), func.avg(Measurements.tobs)).filter(Measurements.date >= start_date).first()
+    #create dictionary from result
+    temps_dictionary1 = {"minimum temperuture": temps[0], "maximum temperature": temps[1], "average temperature": temps[2]}
+    return jsonify(temps_dictionary1)
+
+@app.route("/api/v1.0/<start_date>/<end_date>/")
+def temp_range(start_date, end_date):
+    #query
+    temps = session.query(func.min(Measurements.tobs), func.max(Measurements.tobs), func.avg(Measurements.tobs)).filter(Measurements.date >= start_date, Measurements.date <= end_date).first()
+    #create dictionary from result
+    temps_dictionary2 = {"TMIN": temps[0], "TMAX": temps[1], "TAVG": temps[2]}
+    return jsonify(temps_dictionary2)
 
 if __name__ == '__main__':
     app.run(debug=True)
