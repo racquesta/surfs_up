@@ -75,6 +75,7 @@ def precip_json():
     return jsonify(results)
    
 
+#station route
 @app.route("/api/v1.0/stations")
 def stations():
     #list for station data
@@ -88,13 +89,14 @@ def stations():
     # return to user
     return jsonify(stations_list)
     
-### see comments from lines 65-97 as it is the same process
+# temps route using function
 @app.route("/api/v1.0/tobs")
 def temps_json():
     #call prcp_or temps function with proper datapoint
     results = prcp_or_temps(Measurements.tobs)
     return jsonify(results)
     
+#start date route
 @app.route("/api/v1.0/<start_date>/")
 def temp_stats(start_date):
     #query using start date
@@ -103,6 +105,7 @@ def temp_stats(start_date):
     temps_dictionary1 = {"minimum temperuture": temps[0], "maximum temperature": temps[1], "average temperature": temps[2]}
     return jsonify(temps_dictionary1)
 
+#start/end date route
 @app.route("/api/v1.0/<start_date>/<end_date>/")
 def temp_range(start_date, end_date):
     #query
