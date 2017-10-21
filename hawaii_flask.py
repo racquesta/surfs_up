@@ -52,7 +52,7 @@ def prcp_or_temps(choice):
     record_list = []
     for x in range(1, len(twelve_months)):
         # create record for each station 
-        record_dict = {"Station_id": twelve_months[x-1][1], "station name": twelve_months[x-1][0], "station %s measure" % (choice): twelve_months[x-1][3]}
+        record_dict = {"station_id": twelve_months[x-1][1], "station name": twelve_months[x-1][0], "station %s measure" % (choice): twelve_months[x-1][3]}
         record_list.append(record_dict)
         #if date changes record date, use as key, and use choice list as values, then dump choice list for next date
         if twelve_months[x-1][2] != twelve_months[x][2]:
