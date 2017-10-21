@@ -37,7 +37,7 @@ def home():
     "/api/v1.0/yyyy-mm-dd/<br/>"
     "/api/v1.0/yyyy-mm-dd/yyyy-mm-dd/")
 
-
+#function for prcp and temp data routes
 def prcp_or_temps(choice):
     #create date range dynamically based on last date in database
     most_current = session.query(Measurements.date).order_by(Measurements.date.desc()).first()
